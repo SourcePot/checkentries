@@ -150,8 +150,6 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
         if (!isset($arr['html'])){$arr['html']='';}
         $arr['html'].=$this->processingParams($arr['selector']);
         $arr['html'].=$this->processingRules($arr['selector']);
-        //$selectorMatrix=$this->oc['SourcePot\Datapool\Tools\MiscTools']->arr2matrix($callingElement['Content']['Selector']);
-        //$arr['html'].=$this->oc['SourcePot\Datapool\Tools\HTMLbuilder']->table(['matrix'=>$selectorMatrix,'style'=>'clear:left;','hideHeader'=>TRUE,'hideKeys'=>TRUE,'keep-element-content'=>TRUE,'caption'=>'Selector used for mapping'));
         return $arr;
     }
 
