@@ -1,14 +1,14 @@
 # Check entries
-This is a Datapool processor, i.e. the class implements the processor interface. The processor provides a user interface and data processing for entry checking.
+This is a Datapool processor, i.e. the class implements the processor interface. The processor provides a user interface and data processing for entry checking through the user action. Based on rules relevant entries for manual checking are selected.
 
 <img src="./assets/2024-05-31_schematic.png"/>
 
 # Example
-Each entry containing an invoice is checked aginst rules. This is done when the user clicks the "Process invoices" button. The content admin or admin had configured a random threshold defining how many of the invoices matching the rules (typically 100%) and not matching the rules (typically <100%) should be held for a manual check. All other invoices are forwarded to the canvas element selected by "Target success",e.g. "Warten" in the image.
+A possible application is invoice checking. Invoices are selected for checking based on rules (e.g. if an invoice contains certain phrases or is above a threshold) and random. The relevant invoices are presented to the user on an invoice by invoice bases. The user can eigther accept or decline the invoice. Based on the user action the invoice is forwarded to specific targets, in the example accepted invoices and invoices that there not chosen based on the rules are forwarded to the canvas element selected by "Target success",e.g. "Warten" in the image.
 
 <img src="./assets/2024-05-31check.png"/>
 
-For the manual check the user gets a list of the held back invoices and is asked to "approve" or "dec.line" each invoice. Declined invoices will be forwarded to canvas element selected by "Target failure" the approved invoices will be forwarded to canvas element selected by "Target success".
+Declined invoices will be forwarded to canvas element selected by "Target failure".
 
 <img src="./assets/2024-05-31_user_action.png"/>
 
