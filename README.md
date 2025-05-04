@@ -1,5 +1,5 @@
 # Check entries
-This is a Datapool processor, i.e. the class implements the processor interface. The processor provides a user interface and data processing for entry checking through the user action. Based on rules relevant entries for manual checking are selected.
+This is a datapool processor, i.e. the class implements the processor interface. The processor provides a user interface and data processing for the entry check by the user action. Rules are used to select relevant entries for manual checking.
 
 <img src="./assets/2024-05-31_schematic.png"/>
 
