@@ -13,17 +13,11 @@ namespace SourcePot\checkentries;
 class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     
     private $oc;
-
-    private $entryTable='';
-    private $entryTemplate=['Read'=>['type'=>'SMALLINT UNSIGNED','value'=>'ALL_MEMBER_R','Description'=>'This is the entry specific Read access setting. It is a bit-array.'],
-                            'Write'=>['type'=>'SMALLINT UNSIGNED','value'=>'ALL_CONTENTADMIN_R','Description'=>'This is the entry specific Read access setting. It is a bit-array.'],
-                            ];
-
+    public const ONEDIMSEPARATOR='|[]|';
+    
     public function __construct($oc)
     {
         $this->oc=$oc;
-        $table=str_replace(__NAMESPACE__,'',__CLASS__);
-        $this->entryTable=mb_strtolower(trim($table,'\\'));
     }
 
     Public function loadOc(array $oc):void
@@ -33,11 +27,7 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
 
     public function init()
     {
-        $this->entryTemplate=$this->oc['SourcePot\Datapool\Foundation\Database']->getEntryTemplateCreateTable($this->entryTable,__CLASS__);
     }
-                             
-                             
-    public function getEntryTable():string{return $this->entryTable;}
 
     /**
      * This method is the interface of this data processing class
@@ -89,11 +79,10 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     }
 
     private function getEntriesWidget($callingElement){
-        $S=$this->oc['SourcePot\Datapool\Tools\MiscTools']->getSeparator();
         $html=$this->oc['SourcePot\Datapool\Foundation\Container']->container('Entries','generic',$callingElement,['method'=>'getEntriesWidgetHtml','classWithNamespace'=>__CLASS__],[]);
         // manual check
         $settings=['orderBy'=>'Name','isAsc'=>TRUE,'limit'=>1,'hideUpload'=>TRUE,'hideApprove'=>FALSE,'hideDecline'=>FALSE,'hideDelete'=>TRUE,'hideRemove'=>TRUE];
-        $settings['columns']=[['Column'=>'UNYCOM'.$S.'Full','Filter'=>''],['Column'=>'Costs (left)','Filter'=>'']];
+        $settings['columns']=[['Column'=>'UNYCOM'.(self::ONEDIMSEPARATOR).'Full','Filter'=>''],['Column'=>'Costs (left)','Filter'=>'']];
         $selector=$callingElement['Content']['Selector'];
         $selector['Params!']='%"'.$this->oc['SourcePot\Datapool\Root']->getCurrentUserEntryId().'_action"%';
         $wrapperSetting=[];
