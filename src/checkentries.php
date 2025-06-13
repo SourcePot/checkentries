@@ -15,18 +15,24 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     private $oc;
     public const ONEDIMSEPARATOR='|[]|';
     
-    public function __construct($oc)
-    {
-        $this->oc=$oc;
-    }
+    private $entryTable='';
+    private $entryTemplate=['Read'=>['type'=>'SMALLINT UNSIGNED','value'=>'ALL_MEMBER_R','Description'=>'This is the entry specific Read access setting. It is a bit-array.'],
+                            'Write'=>['type'=>'SMALLINT UNSIGNED','value'=>'ALL_CONTENTADMIN_R','Description'=>'This is the entry specific Read access setting. It is a bit-array.'],
+                            ];
 
-    Public function loadOc(array $oc):void
-    {
+    public function __construct($oc){
         $this->oc=$oc;
+        $table=str_replace(__NAMESPACE__,'',__CLASS__);
+        $this->entryTable=mb_strtolower(trim($table,'\\'));
     }
-
+    
     public function init()
     {
+        $this->entryTemplate=$this->oc['SourcePot\Datapool\Foundation\Database']->getEntryTemplateCreateTable($this->entryTable,__CLASS__);
+    }
+    
+    public function getEntryTable():string{
+        return $this->entryTable;
     }
 
     /**
