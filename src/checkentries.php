@@ -16,10 +16,7 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     public const ONEDIMSEPARATOR='|[]|';
     
     private $entryTable='';
-    private $entryTemplate=[
-        'Read'=>['type'=>'SMALLINT UNSIGNED','value'=>'ALL_MEMBER_R','Description'=>'This is the entry specific Read access setting. It is a bit-array.'],
-        'Write'=>['type'=>'SMALLINT UNSIGNED','value'=>'ALL_CONTENTADMIN_R','Description'=>'This is the entry specific Read access setting. It is a bit-array.'],
-        ];
+    private $entryTemplate=[];
 
     public function __construct($oc){
         $this->oc=$oc;
