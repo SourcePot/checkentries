@@ -181,7 +181,7 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
         $contentStructure=[
             '...'=>['method'=>'select','excontainer'=>TRUE,'value'=>'||','options'=>['&&'=>'AND','||'=>'OR'],'keep-element-content'=>TRUE],
             'Property'=>['method'=>'keySelect','excontainer'=>TRUE,'value'=>'Folder','addSourceValueColumn'=>FALSE],
-            'Property data type'=>['method'=>'select','excontainer'=>TRUE,'value'=>'string','options'=>$this->oc['SourcePot\Datapool\Tools\MiscTools']->getDataTypes(),'keep-element-content'=>TRUE],
+            'Property data type'=>['method'=>'select','excontainer'=>TRUE,'value'=>'string','options'=>\SourcePot\Datapool\Tools\MiscTools::DATA_TYPES,'keep-element-content'=>TRUE],
             'Condition'=>['method'=>'select','excontainer'=>TRUE,'value'=>'strpos','options'=>\SourcePot\Datapool\Tools\MiscTools::CONDITION_TYPES,'keep-element-content'=>TRUE],
             'Compare value'=>['method'=>'element','tag'=>'input','type'=>'text','placeholder'=>'P532132WEDE','excontainer'=>TRUE],
             ];
