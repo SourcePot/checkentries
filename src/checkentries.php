@@ -16,10 +16,7 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     public const ONEDIMSEPARATOR='|[]|';
     
     private $entryTable='';
-    private $entryTemplate=[
-        'Read'=>['type'=>'SMALLINT UNSIGNED','value'=>'ALL_MEMBER_R','Description'=>'This is the entry specific Read access setting. It is a bit-array.'],
-        'Write'=>['type'=>'SMALLINT UNSIGNED','value'=>'ALL_CONTENTADMIN_R','Description'=>'This is the entry specific Read access setting. It is a bit-array.'],
-        ];
+    private $entryTemplate=[];
 
     public function __construct($oc){
         $this->oc=$oc;
@@ -181,8 +178,8 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
         $contentStructure=[
             '...'=>['method'=>'select','excontainer'=>TRUE,'value'=>'||','options'=>['&&'=>'AND','||'=>'OR'],'keep-element-content'=>TRUE],
             'Property'=>['method'=>'keySelect','excontainer'=>TRUE,'value'=>'Folder','addSourceValueColumn'=>FALSE],
-            'Property data type'=>['method'=>'select','excontainer'=>TRUE,'value'=>'string','options'=>$this->oc['SourcePot\Datapool\Tools\MiscTools']->getDataTypes(),'keep-element-content'=>TRUE],
-            'Condition'=>['method'=>'select','excontainer'=>TRUE,'value'=>'strpos','options'=>\SourcePot\Datapool\Tools\MiscTools::CONDITION_TYPES,'keep-element-content'=>TRUE],
+            'Property data type'=>['method'=>'select','excontainer'=>TRUE,'value'=>'string','options'=>\SourcePot\Datapool\Foundation\Computations::DATA_TYPES,'keep-element-content'=>TRUE],
+            'Condition'=>['method'=>'select','excontainer'=>TRUE,'value'=>'strpos','options'=>\SourcePot\Datapool\Foundation\Computations::CONDITION_TYPES,'keep-element-content'=>TRUE],
             'Compare value'=>['method'=>'element','tag'=>'input','type'=>'text','placeholder'=>'P532132WEDE','excontainer'=>TRUE],
             ];
         $contentStructure['Property']+=$callingElement['Content']['Selector'];
