@@ -181,7 +181,7 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
             'Property data type'=>['method'=>'select','excontainer'=>TRUE,'value'=>'string','options'=>\SourcePot\Datapool\Foundation\Computations::DATA_TYPES,'keep-element-content'=>TRUE],
             'Condition'=>['method'=>'select','excontainer'=>TRUE,'value'=>'strpos','options'=>\SourcePot\Datapool\Foundation\Computations::CONDITION_TYPES,'keep-element-content'=>TRUE],
             'Compare value'=>['method'=>'element','tag'=>'input','type'=>'text','placeholder'=>'P532132WEDE','excontainer'=>TRUE],
-            ];
+        ];
         $contentStructure['Property']+=$callingElement['Content']['Selector'];
         $arr=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->callingElement2arr(__CLASS__,__FUNCTION__,$callingElement,TRUE);
         $arr['canvasCallingClass']=$callingElement['Folder'];
@@ -254,8 +254,8 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
             } else {
                 $result['Entries'][$sourceEntry['Name']]['Property missing']=$this->oc['SourcePot\Datapool\Tools\MiscTools']->bool2element(FALSE);
             }
-            $property=$this->oc['SourcePot\Datapool\Tools\MiscTools']->convert($flatSourceEntry[$rule['Content']['Property']],$rule['Content']['Property data type']);
-            $conditionMet=$this->oc['SourcePot\Datapool\Tools\MiscTools']->isTrue($property,$rule['Content']['Compare value'],$rule['Content']['Condition']);
+            $property=$this->oc['SourcePot\Datapool\Foundation\Computations']->convert($flatSourceEntry[$rule['Content']['Property']],$rule['Content']['Property data type']);
+            $conditionMet=$this->oc['SourcePot\Datapool\Foundation\Computations']->isTrue($property,$rule['Content']['Compare value'],$rule['Content']['Condition']);
             if ($ruleMatch===NULL){
                 $ruleMatch=$conditionMet;
             } else if ($rule['Content']['...']==='&&'){
