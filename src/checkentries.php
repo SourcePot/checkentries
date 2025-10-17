@@ -4,7 +4,7 @@
 * @package Datapool
 * @author Carsten Wallenhauer <admin@datapool.info>
 * @copyright 2023 to today Carsten Wallenhauer
-* @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-v3
+* @license https://opensource.org/license/mit MIT
 */
 declare(strict_types=1);
 
@@ -152,7 +152,7 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
             'Target failure'=>['method'=>'canvasElementSelect','excontainer'=>TRUE],
             'Rules match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>100,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
             'Rules no match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>5,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
-            ];
+        ];
         // get selctor
         $arr=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->callingElement2arr(__CLASS__,__FUNCTION__,$callingElement,TRUE);
         $arr['selector']=$this->oc['SourcePot\Datapool\Foundation\Database']->entryByIdCreateIfMissing($arr['selector'],TRUE);
@@ -194,7 +194,7 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     private function processEntries($callingElement,$testRun=FALSE){
         $base=['processingparams'=>[],'processingrules'=>[]];
         $base=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->callingElement2settings(__CLASS__,__FUNCTION__,$callingElement,$base);
-        // add to base canvas elements->['EntryId'=>'Name')
+        // add to base canvas elements->['EntryId'=>'Name']
         $canvasElements=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->getCanvasElements($callingElement['Folder']);
         foreach($canvasElements as $index=>$canvasElement){
             $base[$canvasElement['EntryId']]=$canvasElement['Content']['Style']['Text'];
@@ -205,13 +205,15 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
         // loop through entries
         $params=current($base['processingparams']);
         foreach($this->oc['SourcePot\Datapool\Foundation\Database']->entryIterator($callingElement['Content']['Selector'],TRUE,'Read') as $sourceEntry){
-            $result['Entries'][$sourceEntry['Name']]=['Document missing'=>FALSE,'Property missing'=>FALSE,'Ready for<br/>manual check'=>FALSE,'Rule match'=>FALSE,'User action'=>'none','Random forward'=>''];
-            if (empty($sourceEntry['Params']['File'])){
-                $result['Entries'][$sourceEntry['Name']]['Document missing']=$this->oc['SourcePot\Datapool\Tools\MiscTools']->bool2element(TRUE);
-                continue;
-            } else {
-                $result['Entries'][$sourceEntry['Name']]['Document missing']=$this->oc['SourcePot\Datapool\Tools\MiscTools']->bool2element(FALSE);
-            }
+            $result['Entries'][$sourceEntry['Name']]=[
+                'File attached'=>FALSE,
+                'Property missing'=>FALSE,
+                'Ready for<br/>manual check'=>FALSE,
+                'Rule match'=>FALSE,
+                'User action'=>'none',
+                'Random forward'=>''
+            ];
+            $result['Entries'][$sourceEntry['Name']]['File attached']=$this->oc['SourcePot\Datapool\Tools\MiscTools']->bool2element(!empty($sourceEntry['Params']['File']));
             $result=$this->processEntry($base,$sourceEntry,$result,$testRun);
         }
         $result['Statistics']=$this->oc['SourcePot\Datapool\Foundation\Database']->statistic2matrix();
