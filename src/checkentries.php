@@ -14,7 +14,22 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     
     private $oc;
     public const ONEDIMSEPARATOR='|[]|';
-    
+
+    private const CONTENT_STRUCTURE_PARAMS=[
+        'Target success'=>['method'=>'canvasElementSelect','excontainer'=>TRUE],
+        'Target failure'=>['method'=>'canvasElementSelect','excontainer'=>TRUE],
+        'Rules match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>100,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
+        'Rules no match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>5,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
+    ];
+        
+    private const CONTENT_STRUCTURE_RULES=[
+        '...'=>['method'=>'select','excontainer'=>TRUE,'value'=>'||','options'=>['&&'=>'AND','||'=>'OR'],'keep-element-content'=>TRUE],
+        'Property'=>['method'=>'keySelect','excontainer'=>TRUE,'value'=>'Folder','addSourceValueColumn'=>FALSE],
+        'Property data type'=>['method'=>'select','excontainer'=>TRUE,'value'=>'string','options'=>\SourcePot\Datapool\Foundation\Computations::DATA_TYPES,'keep-element-content'=>TRUE],
+        'Condition'=>['method'=>'select','excontainer'=>TRUE,'value'=>'strpos','options'=>\SourcePot\Datapool\Foundation\Computations::CONDITION_TYPES,'keep-element-content'=>TRUE],
+        'Compare value'=>['method'=>'element','tag'=>'input','type'=>'text','placeholder'=>'P532132WEDE','excontainer'=>TRUE],
+    ];
+        
     private $entryTable='';
     private $entryTemplate=[];
 
@@ -147,42 +162,25 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     }
 
     private function processingParams($callingElement){
-        $contentStructure=[
-            'Target success'=>['method'=>'canvasElementSelect','excontainer'=>TRUE],
-            'Target failure'=>['method'=>'canvasElementSelect','excontainer'=>TRUE],
-            'Rules match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>100,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
-            'Rules no match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>5,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
-        ];
-        // get selctor
+        // build content structure
+        $contentStructure=self::CONTENT_STRUCTURE_PARAMS;
+        $contentStructure=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->finalizeContentStructure($contentStructure,$callingElement);
+        // get calling element and add content structure
         $arr=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->callingElement2arr(__CLASS__,__FUNCTION__,$callingElement,TRUE);
-        $arr['selector']=$this->oc['SourcePot\Datapool\Foundation\Database']->entryByIdCreateIfMissing($arr['selector'],TRUE);
-        // form processing
-        $formData=$this->oc['SourcePot\Datapool\Foundation\Element']->formProcessing(__CLASS__,__FUNCTION__);
-        $elementId=key($formData['val']);
-        if (isset($formData['cmd'][$elementId])){
-            $arr['selector']['Content']=$formData['val'][$elementId]['Content'];
-            $arr['selector']=$this->oc['SourcePot\Datapool\Foundation\Database']->updateEntry($arr['selector'],TRUE);
-        }
-        // get HTML
+        $arr['selector']['EntryId']=$this->oc['SourcePot\Datapool\Foundation\Database']->addOrderedListIndexToEntryId($arr['selector']['EntryId'],1);
         $arr['canvasCallingClass']=$callingElement['Folder'];
         $arr['contentStructure']=$contentStructure;
         $arr['caption']='Entries control: Select mapping target and type';
         $arr['noBtns']=TRUE;
         $row=$this->oc['SourcePot\Datapool\Tools\HTMLbuilder']->entry2row($arr,FALSE,TRUE);
-        if (empty($arr['selector']['Content'])){$row['trStyle']=['background-color'=>'#a00'];}
-        $matrix=['Parameter'=>$row];
-        return $this->oc['SourcePot\Datapool\Tools\HTMLbuilder']->table(['matrix'=>$matrix,'style'=>'clear:left;','hideHeader'=>FALSE,'hideKeys'=>TRUE,'keep-element-content'=>TRUE,'caption'=>$arr['caption']]);
+        return $this->oc['SourcePot\Datapool\Tools\HTMLbuilder']->table(['matrix'=>['Parameter'=>$row],'style'=>'clear:left;','hideHeader'=>FALSE,'hideKeys'=>TRUE,'keep-element-content'=>TRUE,'caption'=>$arr['caption']]);
     }
     
     private function processingRules($callingElement){
-        $contentStructure=[
-            '...'=>['method'=>'select','excontainer'=>TRUE,'value'=>'||','options'=>['&&'=>'AND','||'=>'OR'],'keep-element-content'=>TRUE],
-            'Property'=>['method'=>'keySelect','excontainer'=>TRUE,'value'=>'Folder','addSourceValueColumn'=>FALSE],
-            'Property data type'=>['method'=>'select','excontainer'=>TRUE,'value'=>'string','options'=>\SourcePot\Datapool\Foundation\Computations::DATA_TYPES,'keep-element-content'=>TRUE],
-            'Condition'=>['method'=>'select','excontainer'=>TRUE,'value'=>'strpos','options'=>\SourcePot\Datapool\Foundation\Computations::CONDITION_TYPES,'keep-element-content'=>TRUE],
-            'Compare value'=>['method'=>'element','tag'=>'input','type'=>'text','placeholder'=>'P532132WEDE','excontainer'=>TRUE],
-        ];
-        $contentStructure['Property']+=$callingElement['Content']['Selector'];
+        // build content structure
+        $contentStructure=self::CONTENT_STRUCTURE_RULES;
+        $contentStructure=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->finalizeContentStructure($contentStructure,$callingElement);
+        // get calling element and add content structure
         $arr=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->callingElement2arr(__CLASS__,__FUNCTION__,$callingElement,TRUE);
         $arr['canvasCallingClass']=$callingElement['Folder'];
         $arr['contentStructure']=$contentStructure;
