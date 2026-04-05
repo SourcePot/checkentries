@@ -4,7 +4,7 @@
 * @package Datapool
 * @author Carsten Wallenhauer <admin@datapool.info>
 * @copyright 2023 to today Carsten Wallenhauer
-* @license https://www.gnu.org/licenses/agpl-3.0.html AGPL-v3
+* @license https://opensource.org/license/mit MIT
 */
 declare(strict_types=1);
 
@@ -14,7 +14,25 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     
     private $oc;
     public const ONEDIMSEPARATOR='|[]|';
-    
+
+    private const CONTENT_STRUCTURE_PARAMS=[
+        'Target success'=>['method'=>'canvasElementSelect','excontainer'=>TRUE],
+        'Target failure'=>['method'=>'canvasElementSelect','excontainer'=>TRUE],
+        'Rules match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>100,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
+        'Rules no match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>5,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
+        'Column 1'=>['method'=>'keySelect','excontainer'=>TRUE,'value'=>'Name','addParentKeys'=>TRUE],
+        'Column 2'=>['method'=>'keySelect','excontainer'=>TRUE,'value'=>'SKIP','addParentKeys'=>TRUE,'addColumns'=>['SKIP'=>'-']],
+        'Column 3'=>['method'=>'keySelect','excontainer'=>TRUE,'value'=>'SKIP','addParentKeys'=>TRUE,'addColumns'=>['SKIP'=>'-']],
+    ];
+        
+    private const CONTENT_STRUCTURE_RULES=[
+        '...'=>['method'=>'select','excontainer'=>TRUE,'value'=>'||','options'=>['&&'=>'AND','||'=>'OR'],'keep-element-content'=>TRUE],
+        'Property'=>['method'=>'keySelect','excontainer'=>TRUE,'value'=>'Folder','addSourceValueColumn'=>FALSE],
+        'Property data type'=>['method'=>'select','excontainer'=>TRUE,'value'=>'string','options'=>\SourcePot\Datapool\Foundation\Computations::DATA_TYPES,'keep-element-content'=>TRUE],
+        'Condition'=>['method'=>'select','excontainer'=>TRUE,'value'=>'strpos','options'=>\SourcePot\Datapool\Foundation\Computations::CONDITION_TYPES,'keep-element-content'=>TRUE],
+        'Compare value'=>['method'=>'element','tag'=>'input','type'=>'text','placeholder'=>'P532132WEDE','excontainer'=>TRUE],
+    ];
+        
     private $entryTable='';
     private $entryTemplate=[];
 
@@ -33,68 +51,41 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
         return $this->entryTable;
     }
 
-    /**
-     * This method is the interface of this data processing class
-     *
-     * @param array $callingElementSelector Is the selector for the canvas element which called the method 
-     * @param string $action Selects the requested process to be run  
-     * @return bool TRUE the requested action exists or FALSE if not
-     */
-    public function dataProcessor(array $callingElementSelector=[],string $action='info'){
+    public function dataProcessor(array $callingElementSelector=[],string $action='info')
+    {
         $callingElement=$this->oc['SourcePot\Datapool\Foundation\Database']->entryById($callingElementSelector,TRUE);
-        switch($action){
-            case 'run':
-                if (empty($callingElement)){
-                    return TRUE;
-                } else {
-                return $this->processEntries($callingElement,$testRunOnly=FALSE);
-                }
-                break;
-            case 'test':
-                if (empty($callingElement)){
-                    return TRUE;
-                } else {
-                    return $this->processEntries($callingElement,$testRunOnly=TRUE);
-                }
-                break;
-            case 'widget':
-                if (empty($callingElement)){
-                    return TRUE;
-                } else {
-                    return $this->getEntriesWidget($callingElement);
-                }
-                break;
-            case 'settings':
-                if (empty($callingElement)){
-                    return TRUE;
-                } else {
-                    return $this->getEntriesSettings($callingElement);
-                }
-                break;
-            case 'info':
-                if (empty($callingElement)){
-                    return TRUE;
-                } else {
-                    return $this->getEntriesInfo($callingElement);
-                }
-                break;
+        if (empty($callingElement)){
+            return TRUE;
+        } else {
+            return match($action){
+                'run'=>$this->run($callingElement,$testRunOnly=FALSE),
+                'test'=>$this->run($callingElement,$testRunOnly=TRUE),
+                'widget'=>$this->getWidget($callingElement),
+                'settings'=>$this->getSettings($callingElement),
+                'info'=>$this->getInfo($callingElement),
+            };
         }
-        return FALSE;
     }
 
-    private function getEntriesWidget($callingElement){
+    private function getWidget($callingElement){
         $html=$this->oc['SourcePot\Datapool\Foundation\Container']->container('Entries','generic',$callingElement,['method'=>'getEntriesWidgetHtml','classWithNamespace'=>__CLASS__],[]);
+        // get column options
+        $base=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->callingElement2settings(__CLASS__,__FUNCTION__,$callingElement,[]);
+        $columns=[];
+        foreach(current($base['processingparams']??[])['Content']??[] as $key=>$value){
+            if (strpos($key,'Column ')===FALSE || strpos($value,'SKIP')!==FALSE){continue;}
+            $columns[]=['Column'=>$value];
+        }
         // manual check
-        $settings=['orderBy'=>'Name','isAsc'=>TRUE,'limit'=>1,'hideUpload'=>TRUE,'hideApprove'=>FALSE,'hideDecline'=>FALSE,'hideDelete'=>TRUE,'hideRemove'=>TRUE];
-        $settings['columns']=[['Column'=>'UNYCOM'.(self::ONEDIMSEPARATOR).'Full','Filter'=>''],['Column'=>'Costs (left)','Filter'=>'']];
+        $settings=['orderBy'=>'Name','isAsc'=>TRUE,'limit'=>1,'hideUpload'=>TRUE,'hideApprove'=>FALSE,'hideDecline'=>FALSE,'hideDelete'=>TRUE,'hideRemove'=>TRUE,'columns'=>$columns];
         $selector=$callingElement['Content']['Selector'];
         $selector['Params!']='%"'.$this->oc['SourcePot\Datapool\Root']->getCurrentUserEntryId().'_action"%';
         $wrapperSetting=[];
-        $html.=$this->oc['SourcePot\Datapool\Foundation\Container']->container('Entry check','entryList',$selector,$settings,$wrapperSetting);
+        $html.=$this->oc['SourcePot\Datapool\Foundation\Container']->container('Entry check '.time(),'entryList',$selector,$settings,$wrapperSetting);
         return $html;
     }
 
-    private function getEntriesInfo($callingElement){
+    private function getInfo($callingElement){
         $matrix=[];
         $matrix['']['value']='';
         $html=$this->oc['SourcePot\Datapool\Tools\HTMLbuilder']->table(['matrix'=>$matrix,'hideHeader'=>TRUE,'hideKeys'=>FALSE,'keep-element-content'=>TRUE,'caption'=>'Info']);
@@ -107,9 +98,9 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
         $result=[];
         $formData=$this->oc['SourcePot\Datapool\Foundation\Element']->formProcessing(__CLASS__,__FUNCTION__);
         if (isset($formData['cmd']['run'])){
-            $result=$this->processEntries($arr['selector'],FALSE);
+            $result=$this->run($arr['selector'],FALSE);
         } else if (isset($formData['cmd']['test'])){
-            $result=$this->processEntries($arr['selector'],TRUE);
+            $result=$this->run($arr['selector'],TRUE);
         }
         // build html
         $btnArr=['tag'=>'input','type'=>'submit','callingClass'=>__CLASS__,'callingFunction'=>__FUNCTION__];
@@ -131,7 +122,7 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
         return $arr;
     }
     
-    private function getEntriesSettings($callingElement){
+    private function getSettings($callingElement){
         $html='';
         if ($this->oc['SourcePot\Datapool\Foundation\Access']->isContentAdmin()){
             $html.=$this->oc['SourcePot\Datapool\Foundation\Container']->container('Entries entries settings','generic',$callingElement,['method'=>'getEntriesSettingsHtml','classWithNamespace'=>__CLASS__],[]);
@@ -147,54 +138,34 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
     }
 
     private function processingParams($callingElement){
-        $contentStructure=[
-            'Target success'=>['method'=>'canvasElementSelect','excontainer'=>TRUE],
-            'Target failure'=>['method'=>'canvasElementSelect','excontainer'=>TRUE],
-            'Rules match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>100,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
-            'Rules no match<br/>sample probability'=>['method'=>'select','excontainer'=>TRUE,'value'=>5,'options'=>[100=>'100%',90=>'90%',80=>'80%',70=>'70%',60=>'60%',50=>'50%',40=>'40%',30=>'30%',20=>'20%',10=>'10%',5=>'5%',2=>'2%',1=>'1%'],'keep-element-content'=>TRUE],
-            ];
-        // get selctor
+        // build content structure
+        $contentStructure=self::CONTENT_STRUCTURE_PARAMS;
+        $contentStructure=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->finalizeContentStructure($contentStructure,$callingElement);
+        // get calling element and add content structure
         $arr=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->callingElement2arr(__CLASS__,__FUNCTION__,$callingElement,TRUE);
-        $arr['selector']=$this->oc['SourcePot\Datapool\Foundation\Database']->entryByIdCreateIfMissing($arr['selector'],TRUE);
-        // form processing
-        $formData=$this->oc['SourcePot\Datapool\Foundation\Element']->formProcessing(__CLASS__,__FUNCTION__);
-        $elementId=key($formData['val']);
-        if (isset($formData['cmd'][$elementId])){
-            $arr['selector']['Content']=$formData['val'][$elementId]['Content'];
-            $arr['selector']=$this->oc['SourcePot\Datapool\Foundation\Database']->updateEntry($arr['selector'],TRUE);
-        }
-        // get HTML
-        $arr['canvasCallingClass']=$callingElement['Folder'];
         $arr['contentStructure']=$contentStructure;
         $arr['caption']='Entries control: Select mapping target and type';
         $arr['noBtns']=TRUE;
         $row=$this->oc['SourcePot\Datapool\Tools\HTMLbuilder']->entry2row($arr,FALSE,TRUE);
-        if (empty($arr['selector']['Content'])){$row['trStyle']=['background-color'=>'#a00'];}
-        $matrix=['Parameter'=>$row];
-        return $this->oc['SourcePot\Datapool\Tools\HTMLbuilder']->table(['matrix'=>$matrix,'style'=>'clear:left;','hideHeader'=>FALSE,'hideKeys'=>TRUE,'keep-element-content'=>TRUE,'caption'=>$arr['caption']]);
+        return $this->oc['SourcePot\Datapool\Tools\HTMLbuilder']->table(['matrix'=>['Parameter'=>$row],'style'=>'clear:left;','hideHeader'=>FALSE,'hideKeys'=>TRUE,'keep-element-content'=>TRUE,'caption'=>$arr['caption']]);
     }
     
     private function processingRules($callingElement){
-        $contentStructure=[
-            '...'=>['method'=>'select','excontainer'=>TRUE,'value'=>'||','options'=>['&&'=>'AND','||'=>'OR'],'keep-element-content'=>TRUE],
-            'Property'=>['method'=>'keySelect','excontainer'=>TRUE,'value'=>'Folder','addSourceValueColumn'=>FALSE],
-            'Property data type'=>['method'=>'select','excontainer'=>TRUE,'value'=>'string','options'=>\SourcePot\Datapool\Foundation\Computations::DATA_TYPES,'keep-element-content'=>TRUE],
-            'Condition'=>['method'=>'select','excontainer'=>TRUE,'value'=>'strpos','options'=>\SourcePot\Datapool\Foundation\Computations::CONDITION_TYPES,'keep-element-content'=>TRUE],
-            'Compare value'=>['method'=>'element','tag'=>'input','type'=>'text','placeholder'=>'P532132WEDE','excontainer'=>TRUE],
-        ];
-        $contentStructure['Property']+=$callingElement['Content']['Selector'];
+        // build content structure
+        $contentStructure=self::CONTENT_STRUCTURE_RULES;
+        $contentStructure=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->finalizeContentStructure($contentStructure,$callingElement);
+        // get calling element and add content structure
         $arr=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->callingElement2arr(__CLASS__,__FUNCTION__,$callingElement,TRUE);
-        $arr['canvasCallingClass']=$callingElement['Folder'];
         $arr['contentStructure']=$contentStructure;
         $arr['caption']='Entries filter rules: defines entry filter for manual checking';
         $html=$this->oc['SourcePot\Datapool\Tools\HTMLbuilder']->entryListEditor($arr);
         return $html;
     }
 
-    private function processEntries($callingElement,$testRun=FALSE){
+    private function run($callingElement,$testRun=FALSE){
         $base=['processingparams'=>[],'processingrules'=>[]];
         $base=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->callingElement2settings(__CLASS__,__FUNCTION__,$callingElement,$base);
-        // add to base canvas elements->['EntryId'=>'Name')
+        // add to base canvas elements->['EntryId'=>'Name']
         $canvasElements=$this->oc['SourcePot\Datapool\Foundation\DataExplorer']->getCanvasElements($callingElement['Folder']);
         foreach($canvasElements as $index=>$canvasElement){
             $base[$canvasElement['EntryId']]=$canvasElement['Content']['Style']['Text'];
@@ -205,13 +176,15 @@ class checkentries implements \SourcePot\Datapool\Interfaces\Processor{
         // loop through entries
         $params=current($base['processingparams']);
         foreach($this->oc['SourcePot\Datapool\Foundation\Database']->entryIterator($callingElement['Content']['Selector'],TRUE,'Read') as $sourceEntry){
-            $result['Entries'][$sourceEntry['Name']]=['Document missing'=>FALSE,'Property missing'=>FALSE,'Ready for<br/>manual check'=>FALSE,'Rule match'=>FALSE,'User action'=>'none','Random forward'=>''];
-            if (empty($sourceEntry['Params']['File'])){
-                $result['Entries'][$sourceEntry['Name']]['Document missing']=$this->oc['SourcePot\Datapool\Tools\MiscTools']->bool2element(TRUE);
-                continue;
-            } else {
-                $result['Entries'][$sourceEntry['Name']]['Document missing']=$this->oc['SourcePot\Datapool\Tools\MiscTools']->bool2element(FALSE);
-            }
+            $result['Entries'][$sourceEntry['Name']]=[
+                'File attached'=>FALSE,
+                'Property missing'=>FALSE,
+                'Ready for<br/>manual check'=>FALSE,
+                'Rule match'=>FALSE,
+                'User action'=>'none',
+                'Random forward'=>''
+            ];
+            $result['Entries'][$sourceEntry['Name']]['File attached']=$this->oc['SourcePot\Datapool\Tools\MiscTools']->bool2element(!empty($sourceEntry['Params']['File']));
             $result=$this->processEntry($base,$sourceEntry,$result,$testRun);
         }
         $result['Statistics']=$this->oc['SourcePot\Datapool\Foundation\Database']->statistic2matrix();
